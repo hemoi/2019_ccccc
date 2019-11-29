@@ -55,8 +55,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.querySecretByOwner(stub, args)
 	case "querySecret":
 		return t.querySecret(stub, args)
-	// case "checkOriginal":
-	// 	return t.checkOriginal(stub, args)
 	default:
 		fmt.Println("invoke did not find func: " + function)
 		return shim.Error("Received unknown function invocation")
@@ -163,18 +161,14 @@ func (t *SimpleChaincode) initSecret(stub shim.ChaincodeStubInterface, args []st
 		return shim.Error(err.Error())
 	}
 
-	// //  ==== Index the secret to enable color-based range queries, e.g. return all blue marbles ====
-	// //  An 'index' is a normal key/value entry in state.
-	// //  The key is a composite key, with the elements that you want to range query on listed first.
-	// //  In our case, the composite key is based on indexName~color~name.
-	// //  This will enable very efficient state range queries based on composite keys matching indexName~color~*
+
 	indexName := "owner~Hash"
 	hashNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{secret.Owner, secret.Name})
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-	// //  Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the secret.
-	// //  Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value
+
+
 	value := []byte{0x00}
 	stub.PutPrivateData("collectionSecret", hashNameIndexKey, value)
 
