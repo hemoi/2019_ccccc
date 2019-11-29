@@ -6,7 +6,7 @@
 docker exec -it cli bash
 ```
 
-## Run back-end (node.js)
+# Run back-end (node.js)
 in docker.
 <!--
 ### At the below repo:
@@ -20,12 +20,26 @@ in docker.
 node server.js
 ```
 
-## Run front-end (react.js)
+# Run front-end (react.js)
 in docker
 
+## test
 ```bash
 cd ~
 cd /
 cd test/test
 npm start
 ```
+
+## test2
+```bash
+cd ~
+cd /
+cd test/test2
+npm start
+```
+
+tmp. mapping:
+* main --> readSecret
+* viewer --> readOriginalDetails
+* tx --> readOriginal
