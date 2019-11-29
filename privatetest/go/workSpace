@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "/home/hemoi/go/src/github.com/hyperledger/fabric-samples/chaincode"
+		},
+		{
+			"path": "/home/hemoi/go/src/ideaton2019"
+		}
+	],
+	"settings": {}
+}
