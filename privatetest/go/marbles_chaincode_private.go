@@ -103,7 +103,6 @@ func (t *SimpleChaincode) initSecret(stub shim.ChaincodeStubInterface, args []st
 	secretInput.Date = time.Now().Format("20060102150405")
 	sha := sha512.New()
 	sha.Write([]byte(secretInput.Original))
-	// sha.Write([]byte(secretInput.Date))
 	sha.Write([]byte(secretInput.Owner))
 	sha.Write([]byte(secretInput.Name))
 	secretInput.Hash = sha.Sum(nil)
@@ -225,7 +224,7 @@ func (t *SimpleChaincode) readOriginal(stub shim.ChaincodeStubInterface, args []
 	return shim.Success(valAsbytes)
 }
 
-//delete 는 일단 pass함
+
 
 func (t *SimpleChaincode) querySecretByOwner(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
@@ -300,5 +299,3 @@ func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString 
 
 	return buffer.Bytes(), nil
 }
-
-func (t *SimpleChaincode) init Marble
