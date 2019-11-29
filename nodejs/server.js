@@ -52,7 +52,7 @@ function initHttpServer() {
         // const args = req.body.args;
         const args = "Secret@1";
         console.log("args: ", args);
-
+	
         let command = "peer chaincode query -C mychannel -n marblesp -c '{\"Args\":[\""+ "readSecret" +"\",\"" + args + "\"]}'";
         child = exec(command,  function (error, stdout, stderr) {
 
@@ -65,7 +65,13 @@ function initHttpServer() {
             }
     
             // res.send(JSON.stringify([JSON.parse(stdout)], null, 2));
-            res.send([JSON.parse(stdout)]);
+            try {
+                JSON.parse(stdout);
+                res.send([JSON.parse(stdout)]);
+            }
+            catch (e) {
+                res.send([]);
+            }
         });
     });
 
@@ -84,7 +90,13 @@ function initHttpServer() {
                 console.log('exec error: ' + error);
             }
 
-            res.send(stdout);
+            try {
+		JSON.parse(stdout);
+            	res.send([JSON.parse(stdout)]);
+	    }
+	    catch (e) {
+	        res.send([]);
+	    }
         });
     });
 
@@ -102,8 +114,14 @@ function initHttpServer() {
             if (error !== null) {
                 console.log('exec error: ' + error);
             }
-            
-            res.send(stdout);
+           
+            try {
+                JSON.parse(stdout); 
+                res.send([JSON.parse(stdout)]);
+            }
+            catch (e){
+                res.send([]);
+            }
         });
     });
 
