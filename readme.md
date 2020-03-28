@@ -1,4 +1,4 @@
-BLACKCHAIN IDEATON 2019
+BLOCKCHAIN IDEATON 2019
 =======================
 
 ## 기술임치제도 2.0
