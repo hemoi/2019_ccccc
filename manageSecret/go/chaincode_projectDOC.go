@@ -1,46 +1,48 @@
+/* changed hyperledger fabric private DB tutorial */
+
 package main
 
 import (
-	"bytes"
 	"crypto/sha512"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	pb "github.com/hyperledger/fabric/protos/peer"
 )
 
-type SimpleChaincode struct {
+type Chaincode struct {
 }
 
+// for all of blockchain network user
 type secret struct {
 	ObjectType string `json:"docType"`
-	Name       string `json:"name"`
-	Hash       []byte `json:"hash"`
-	Date       string `json:"date"`
-	Owner      string `json:"owner"`
+	Name       string `json:"name"`  // data information
+	Hash       []byte `json:"hash"`  // hash of original data
+	Date       string `json:"date"`  // timestamp
+	Owner      string `json:"owner"` // who has right of this data
 }
 
+// people who are permissioned
 type secretOriginal struct {
 	ObjectType string `json:"docType"`
 	Name       string `json:"name"`
-	Original   string `json:"original"`
+	Original   string `json:"original"` // original data
 }
 
 func main() {
-	err := shim.Start(new(SimpleChaincode))
+	err := shim.Start(new(Chaincode))
 	if err != nil {
 		fmt.Printf("Error starting Simple chaincode:%s", err)
 	}
 }
 
-func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
+func (t *Chaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	return shim.Success(nil)
 }
 
-func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
+func (t *Chaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	function, args := stub.GetFunctionAndParameters()
 	fmt.Println("invoke is running " + function)
 
@@ -51,10 +53,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 		return t.readSecret(stub, args)
 	case "readOriginal":
 		return t.readOriginal(stub, args)
-	case "querySecretByOwner":
-		return t.querySecretByOwner(stub, args)
-	case "querySecret":
-		return t.querySecret(stub, args)
 	default:
 		fmt.Println("invoke did not find func: " + function)
 		return shim.Error("Received unknown function invocation")
@@ -62,11 +60,11 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 
 }
 
-func (t *SimpleChaincode) initSecret(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *Chaincode) initSecret(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	var err error
 
 	type secretTransientInput struct {
-		Name     string `json:"name"` //the fieldtags are needed to keep case from bouncing around
+		Name     string `json:"name"`
 		Hash     []byte `json:"hash"`
 		Date     string `json:"date"`
 		Owner    string `json:"owner"`
@@ -99,6 +97,7 @@ func (t *SimpleChaincode) initSecret(stub shim.ChaincodeStubInterface, args []st
 	}
 
 	secretInput.Date = time.Now().Format("20060102150405")
+
 	sha := sha512.New()
 	sha.Write([]byte(secretInput.Original))
 	sha.Write([]byte(secretInput.Owner))
@@ -140,13 +139,13 @@ func (t *SimpleChaincode) initSecret(stub shim.ChaincodeStubInterface, args []st
 		return shim.Error(err.Error())
 	}
 
-	// === Save secret to state ===
+	// Save secret to state
 	err = stub.PutPrivateData("collectionSecret", secretInput.Name, secretJSONasBytes)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	// ==== Create secret private details object with original data, marshal to JSON, and save to state ====
+	// Create secret private details (secret original) object with original data, marshal to JSON, and save to state
 	secretOriginal := &secretOriginal{
 		ObjectType: "secretOriginal",
 		Name:       secretInput.Name,
@@ -161,13 +160,11 @@ func (t *SimpleChaincode) initSecret(stub shim.ChaincodeStubInterface, args []st
 		return shim.Error(err.Error())
 	}
 
-
 	indexName := "owner~Hash"
 	hashNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{secret.Owner, secret.Name})
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-
 
 	value := []byte{0x00}
 	stub.PutPrivateData("collectionSecret", hashNameIndexKey, value)
@@ -176,7 +173,7 @@ func (t *SimpleChaincode) initSecret(stub shim.ChaincodeStubInterface, args []st
 	return shim.Success(nil)
 }
 
-func (t *SimpleChaincode) readSecret(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *Chaincode) readSecret(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	var name, jsonResp string
 	var err error
 
@@ -197,7 +194,7 @@ func (t *SimpleChaincode) readSecret(stub shim.ChaincodeStubInterface, args []st
 	return shim.Success(valAsbytes)
 }
 
-func (t *SimpleChaincode) readOriginal(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+func (t *Chaincode) readOriginal(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	var name, jsonResp string
 	var err error
 
@@ -216,80 +213,4 @@ func (t *SimpleChaincode) readOriginal(stub shim.ChaincodeStubInterface, args []
 	}
 
 	return shim.Success(valAsbytes)
-}
-
-
-
-func (t *SimpleChaincode) querySecretByOwner(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-
-	if len(args) < 1 {
-		return shim.Error("Incorrect number of arguments. Expecting 1")
-	}
-
-	owner := strings.ToLower(args[0])
-
-	queryString := fmt.Sprintf("{\"selector\":{\"docType\":\"secret\",\"owner\":\"%s\"}}", owner)
-
-	queryResults, err := getQueryResultForQueryString(stub, queryString)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	return shim.Success(queryResults)
-}
-
-func (t *SimpleChaincode) querySecret(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-
-	if len(args) < 1 {
-		return shim.Error("Incorrect number of arguments. Expecting 1")
-	}
-
-	queryString := args[0]
-
-	queryResults, err := getQueryResultForQueryString(stub, queryString)
-	if err != nil {
-		return shim.Error(err.Error())
-	}
-	return shim.Success(queryResults)
-}
-
-func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
-
-	fmt.Printf("- getQueryResultForQueryString queryString:\n%s\n", queryString)
-
-	resultsIterator, err := stub.GetPrivateDataQueryResult("collectionSecret", queryString)
-	if err != nil {
-		return nil, err
-	}
-	defer resultsIterator.Close()
-
-	// buffer is a JSON array containing QueryRecords
-	var buffer bytes.Buffer
-	buffer.WriteString("[")
-
-	bArrayMemberAlreadyWritten := false
-	for resultsIterator.HasNext() {
-		queryResponse, err := resultsIterator.Next()
-		if err != nil {
-			return nil, err
-		}
-		// Add a comma before array members, suppress it for the first array member
-		if bArrayMemberAlreadyWritten == true {
-			buffer.WriteString(",")
-		}
-		buffer.WriteString("{\"Key\":")
-		buffer.WriteString("\"")
-		buffer.WriteString(queryResponse.Key)
-		buffer.WriteString("\"")
-
-		buffer.WriteString(", \"Record\":")
-		// Record is a JSON object, so we write as-is
-		buffer.WriteString(string(queryResponse.Value))
-		buffer.WriteString("}")
-		bArrayMemberAlreadyWritten = true
-	}
-	buffer.WriteString("]")
-
-	fmt.Printf("- getQueryResultForQueryString queryResult:\n%s\n", buffer.String())
-
-	return buffer.Bytes(), nil
 }
